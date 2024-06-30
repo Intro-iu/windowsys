@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=prts Wayland
+Comment=Start prts session using Wayland
+Exec=env XDG_SESSION_TYPE=wayland dbus-run-session prts-session
+TryExec=prts-session
+Type=Application
