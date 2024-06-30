@@ -110,7 +110,7 @@ void ProcessManager::logout()
 
 void ProcessManager::startWindowManager()
 {
-    qCInfo(PM) << "Starting window manager";
+    qDebug() << "Starting window manager";
 
     QProcess *wmProcess = new QProcess;
     // 启动Wayland窗口管理器
@@ -123,7 +123,7 @@ void ProcessManager::startWindowManager()
     QTimer::singleShot(30 * 1000, m_waitLoop, &QEventLoop::quit);
     m_waitLoop->exec();
 
-    qCInfo(PM) << "Window manager started or timeout occurred";
+    qDebug() << "Window manager started or timeout occurred";
 
     delete m_waitLoop;
     m_waitLoop = nullptr;
@@ -131,18 +131,18 @@ void ProcessManager::startWindowManager()
 
 void ProcessManager::loadSystemProcess()
 {
-    qCInfo(PM) << "Loading system processes from configuration file";
+    qDebug() << "Loading system processes from configuration file";
 
     QString configFilePath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/autostart.conf";
     QFile configFile(configFilePath);
 
     if (!configFile.exists()) {
-        qCWarning(PM) << "Configuration file not found:" << configFilePath;
+        qWarning() << "Configuration file not found:" << configFilePath;
         return;
     }
 
     if (!configFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qCWarning(PM) << "Unable to open configuration file:" << configFilePath;
+        qWarning() << "Unable to open configuration file:" << configFilePath;
         return;
     }
 
@@ -172,7 +172,7 @@ void ProcessManager::loadSystemProcess()
             if (process->exitCode() == 0) {
                 m_systemProcess.insert(exec, process);
             } else {
-                qCWarning(PM) << "Failed to start process:" << exec;
+                qWarning() << "Failed to start process:" << exec;
                 process->deleteLater();
             }
         }
