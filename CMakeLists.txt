@@ -4,7 +4,7 @@ project(windowsys)
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick WaylandCompositor)
-find_package(KF6 REQUIRED COMPONENTS CoreAddons)
+find_package(KF6CoreAddons REQUIRED)
 
 set(SOURCES
     src/main.cpp
