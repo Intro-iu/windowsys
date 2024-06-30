@@ -35,6 +35,7 @@ ProcessManager::ProcessManager(QObject *parent)
     , m_waitLoop(nullptr)
 {
     // Wayland doesn't require a native event filter
+    qDebug() << "ProcessManager created";
 }
 
 ProcessManager::~ProcessManager()
