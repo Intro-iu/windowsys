@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2021 CutefishOS Team.
- *
- * Author:     revenmartin <revenmartin@gmail.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include "processmanager.h"
 
 #include <QCoreApplication>
@@ -34,6 +15,8 @@
 #include <KWindowSystem>
 
 Q_LOGGING_CATEGORY(PM, "processmanager")
+
+Q_LOGGING_CATEGORY(PM, "ProcessManager")
 
 ProcessManager::ProcessManager(QObject *parent)
     : QObject(parent)
@@ -55,6 +38,7 @@ ProcessManager::~ProcessManager()
 
 void ProcessManager::start()
 {
+    qDebug() << "Starting ProcessManager";
     startWindowManager();
     loadSystemProcess();
 
@@ -63,6 +47,7 @@ void ProcessManager::start()
 
 void ProcessManager::logout()
 {
+    qDebug() << "Logging out";
     QMapIterator<QString, QProcess *> i(m_systemProcess);
 
     while (i.hasNext()) {
@@ -85,7 +70,7 @@ void ProcessManager::logout()
 
 void ProcessManager::startWindowManager()
 {
-    qCInfo(PM) << "Starting window manager";
+    qDebug() << "Starting window manager";
 
     QProcess *wmProcess = new QProcess;
     // 启动Wayland窗口管理器
@@ -98,7 +83,7 @@ void ProcessManager::startWindowManager()
     QTimer::singleShot(30 * 1000, m_waitLoop, &QEventLoop::quit);
     m_waitLoop->exec();
 
-    qCInfo(PM) << "Window manager started or timeout occurred";
+    qDebug() << "Window manager started or timeout occurred";
 
     delete m_waitLoop;
     m_waitLoop = nullptr;
@@ -106,18 +91,18 @@ void ProcessManager::startWindowManager()
 
 void ProcessManager::loadSystemProcess()
 {
-    qCInfo(PM) << "Loading system processes from configuration file";
+    qDebug() << "Loading system processes from configuration file";
 
     QString configFilePath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/autostart.conf";
     QFile configFile(configFilePath);
 
     if (!configFile.exists()) {
-        qCWarning(PM) << "Configuration file not found:" << configFilePath;
+        qWarning() << "Configuration file not found:" << configFilePath;
         return;
     }
 
     if (!configFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qCWarning(PM) << "Unable to open configuration file:" << configFilePath;
+        qWarning() << "Unable to open configuration file:" << configFilePath;
         return;
     }
 
@@ -147,7 +132,7 @@ void ProcessManager::loadSystemProcess()
             if (process->exitCode() == 0) {
                 m_systemProcess.insert(exec, process);
             } else {
-                qCWarning(PM) << "Failed to start process:" << exec;
+                qWarning() << "Failed to start process:" << exec;
                 process->deleteLater();
             }
         }
@@ -156,6 +141,8 @@ void ProcessManager::loadSystemProcess()
 
 void ProcessManager::loadAutoStartProcess()
 {
+    qDebug() << "Loading auto start processes";
+
     QStringList execList;
     const QStringList dirs = QStandardPaths::locateAll(QStandardPaths::GenericConfigLocation,
                                                        QStringLiteral("autostart"),
