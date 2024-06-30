@@ -9,15 +9,31 @@
 #include <QTimer>
 #include <QThread>
 #include <QDir>
+#include <syslog.h>
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
-    QFile file("debug.log");
-    if (!file.open(QIODevice::Append | QIODevice::Text))
-        return;
+    QByteArray localMsg = msg.toLocal8Bit();
+    const char *file = context.file ? context.file : "";
+    const char *function = context.function ? context.function : "";
 
-    QTextStream out(&file);
-    out << msg << endl;
+    switch (type) {
+    case QtDebugMsg:
+        syslog(LOG_DEBUG, "Debug: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+        break;
+    case QtInfoMsg:
+        syslog(LOG_INFO, "Info: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+        break;
+    case QtWarningMsg:
+        syslog(LOG_WARNING, "Warning: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+        break;
+    case QtCriticalMsg:
+        syslog(LOG_CRIT, "Critical: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+        break;
+    case QtFatalMsg:
+        syslog(LOG_CRIT, "Fatal: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+        abort();
+    }
 }
 
 ProcessManager::ProcessManager(QObject *parent)
