@@ -22,13 +22,11 @@
 
 int main(int argc, char *argv[])
 {
-    putenv((char *)"SESSION_MANAGER=");
-
-    // force xcb QPA plugin as session manager server is very X11 specific.
-    qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("xcb"));
+    qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("wayland"));
 
     QQuickWindow::setDefaultAlphaBuffer(true);
-    QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+    // 如果应用程序在Wayland下高DPI表现正常，可以移除禁用高DPI缩放的属性设置。
+    // QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
 
     Application a(argc, argv);
     a.setQuitOnLastWindowClosed(false);
