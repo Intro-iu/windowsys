@@ -12,10 +12,11 @@ Application::Application(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_processManager(new ProcessManager)
 {
+    qDebug() << "Initializing application";
     new SessionAdaptor(this);
 
     // connect to D-Bus and register as an object:
-    QDBusConnection::sessionBus().registerService(QStringLiteral("org.prts.Session"));
+    QDBusConnection::sessionBus().registerService(QStringLiteral("org.cutefish.Session"));
     QDBusConnection::sessionBus().registerObject(QStringLiteral("/Session"), this);
 
     createConfigDirectory();

@@ -15,5 +15,7 @@ int main(int argc, char *argv[])
     Application a(argc, argv);
     a.setQuitOnLastWindowClosed(false);
 
+    qDebug() << "Starting session application";
+
     return a.exec();
 }
