@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2021 CutefishOS Team.
- *
- * Author:     revenmartin <revenmartin@gmail.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include "application.h"
 #include "sessionadaptor.h"
 
@@ -26,17 +7,59 @@
 #include <QProcess>
 #include <QDebug>
 #include <QDir>
+#include <QTimer>
+#include <QLoggingCategory>
+#include <QtMessageHandler>
+#include <syslog.h>
+#include <exception>
+
+// Function to handle logging to syslog
+void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+    QByteArray localMsg = msg.toLocal8Bit();
+    const char *file = context.file ? context.file : "";
+    const char *function = context.function ? context.function : "";
+    switch (type) {
+        case QtDebugMsg:
+            syslog(LOG_DEBUG, "Debug: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+            break;
+        case QtInfoMsg:
+            syslog(LOG_INFO, "Info: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+            break;
+        case QtWarningMsg:
+            syslog(LOG_WARNING, "Warning: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+            break;
+        case QtCriticalMsg:
+            syslog(LOG_CRIT, "Critical: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+            break;
+        case QtFatalMsg:
+            syslog(LOG_ALERT, "Fatal: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+            abort();
+    }
+}
 
 Application::Application(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_processManager(new ProcessManager)
 {
+    // Set up logging to syslog
+    openlog("prts-session", LOG_PID | LOG_CONS, LOG_USER);
+    qInstallMessageHandler(messageHandler);
+
     try {
+        qDebug() << "Initializing session adaptor";
         new SessionAdaptor(this);
 
-        // connect to D-Bus and register as an object:
-        QDBusConnection::sessionBus().registerService(QStringLiteral("org.cutefish.Session"));
-        QDBusConnection::sessionBus().registerObject(QStringLiteral("/Session"), this);
+        qDebug() << "Registering DBus service";
+        if (!QDBusConnection::sessionBus().registerService(QStringLiteral("org.cutefish.Session"))) {
+            qWarning() << "Failed to register DBus service";
+            return;
+        }
+
+        qDebug() << "Registering DBus object";
+        if (!QDBusConnection::sessionBus().registerObject(QStringLiteral("/Session"), this)) {
+            qWarning() << "Failed to register DBus object";
+            return;
+        }
 
         createConfigDirectory();
         initEnvironments();
@@ -44,20 +67,23 @@ Application::Application(int &argc, char **argv)
 
         if (!syncDBusEnvironment()) {
             // Startup error
-            qDebug() << "Could not sync environment to dbus.";
+            qWarning() << "Could not sync environment to DBus.";
         } else {
-            qDebug() << "Environment synced to dbus.";
+            qDebug() << "Environment synced to DBus.";
         }
 
         QTimer::singleShot(100, m_processManager, &ProcessManager::start);
     } catch (const std::exception &e) {
         qWarning() << "Failed to initialize session: " << e.what();
+    } catch (...) {
+        qWarning() << "Failed to initialize session: Unknown error";
     }
-    
 }
 
 void Application::initEnvironments()
 {
+    qDebug() << "Initializing environments";
+
     // Set defaults
     if (qEnvironmentVariableIsEmpty("XDG_DATA_HOME"))
         qputenv("XDG_DATA_HOME", QDir::home().absoluteFilePath(QStringLiteral(".local/share")).toLocal8Bit());
@@ -99,6 +125,8 @@ void Application::initEnvironments()
 
 void Application::initLanguage()
 {
+    qDebug() << "Initializing language settings";
+
     QSettings settings(QSettings::UserScope, "cutefishos", "language");
     QString value = settings.value("language", "en_US").toString();
     QString str = QString("%1.UTF-8").arg(value);
@@ -127,6 +155,8 @@ static bool isInteger(double x)
 
 bool Application::syncDBusEnvironment()
 {
+    qDebug() << "Syncing environment to DBus";
+
     int exitCode = 0;
 
     // At this point all environment variables are set, let's send it to the DBus session server to update the activation environment
@@ -139,14 +169,21 @@ bool Application::syncDBusEnvironment()
 
 void Application::createConfigDirectory()
 {
+    qDebug() << "Creating config directory";
+
     const QString configDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
 
-    if (!QDir().mkpath(configDir))
-        qDebug() << "Could not create config directory XDG_CONFIG_HOME: " << configDir;
+    if (!QDir().mkpath(configDir)) {
+        qWarning() << "Could not create config directory XDG_CONFIG_HOME: " << configDir;
+    } else {
+        qDebug() << "Config directory created: " << configDir;
+    }
 }
 
 int Application::runSync(const QString &program, const QStringList &args, const QStringList &env)
 {
+    qDebug() << "Running program:" << program << "with arguments:" << args << "and environment:" << env;
+
     QProcess p;
 
     if (!env.isEmpty())
@@ -158,6 +195,8 @@ int Application::runSync(const QString &program, const QStringList &args, const 
 
     if (p.exitCode()) {
         qWarning() << program << args << "exited with code" << p.exitCode();
+    } else {
+        qDebug() << program << args << "finished successfully";
     }
 
     return p.exitCode();
