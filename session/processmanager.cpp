@@ -86,45 +86,56 @@ void ProcessManager::startWindowManager()
     m_waitLoop = nullptr;
 }
 
-void ProcessManager::loadSystemProcess()
+void ProcessManager::loadAutoStartProcess()
 {
-    qCInfo(PM) << "Loading system processes";
+    qCInfo(PM) << "Loading auto start processes from configuration file";
 
-    QList<QPair<QString, QStringList>> list;
-    list << qMakePair(QString("cutefish-settings-daemon"), QStringList());
-    list << qMakePair(QString("cutefish-xembedsniproxy"), QStringList());
+    QString configFilePath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/autostart.conf";
+    QFile configFile(configFilePath);
 
-    // Desktop components
-    list << qMakePair(QString("cutefish-filemanager"), QStringList("--desktop"));
-    list << qMakePair(QString("cutefish-statusbar"), QStringList());
-    list << qMakePair(QString("cutefish-dock"), QStringList());
-    list << qMakePair(QString("cutefish-launcher"), QStringList());
+    if (!configFile.exists()) {
+        qCWarning(PM) << "Configuration file not found:" << configFilePath;
+        return;
+    }
 
-    // Add GUI applications to start
-    list << qMakePair(QString("konsole"), QStringList());
+    if (!configFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qCWarning(PM) << "Unable to open configuration file:" << configFilePath;
+        return;
+    }
 
-    for (QPair<QString, QStringList> pair : list) {
-        QProcess *process = new QProcess;
-        process->setProcessChannelMode(QProcess::ForwardedChannels);
-        process->setProgram(pair.first);
-        process->setArguments(pair.second);
-        process->start();
-        process->waitForStarted();
+    QTextStream in(&configFile);
+    QStringList execList;
 
-        if (pair.first == "cutefish-settings-daemon") {
-            QThread::msleep(800);
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();
+        if (!line.isEmpty() && !line.startsWith("#")) {  // 忽略空行和注释
+            execList << line;
         }
+    }
 
-        qCInfo(PM) << "Load DE components: " << pair.first << pair.second;
+    configFile.close();
 
-        // Add to map
-        if (process->exitCode() == 0) {
-            m_autoStartProcess.insert(pair.first, process);
-        } else {
-            process->deleteLater();
+    for (const QString &exec : execList) {
+        QProcess *process = new QProcess;
+        QStringList arguments = QProcess::splitCommand(exec);
+
+        if (!arguments.isEmpty()) {
+            process->setProgram(arguments.takeFirst());
+            process->setArguments(arguments);
+            process->start();
+            process->waitForStarted();
+
+            if (process->exitCode() == 0) {
+                m_autoStartProcess.insert(exec, process);
+            } else {
+                process->deleteLater();
+            }
         }
     }
 }
+
+
+
 
 
 void ProcessManager::loadAutoStartProcess()
