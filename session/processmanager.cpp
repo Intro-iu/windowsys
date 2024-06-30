@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2021 CutefishOS Team.
- *
- * Author:     revenmartin <revenmartin@gmail.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include "processmanager.h"
 
 #include <QCoreApplication>
@@ -133,54 +114,39 @@ void ProcessManager::startWindowManager()
 
 void ProcessManager::loadSystemProcess()
 {
-    qDebug() << "Loading system processes from configuration file";
+    QList<QPair<QString, QStringList>> list;
+    list << qMakePair(QString("cutefish-settings-daemon"), QStringList());
+    list << qMakePair(QString("cutefish-xembedsniproxy"), QStringList());
 
-    QString configFilePath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/autostart.conf";
-    QFile configFile(configFilePath);
+    // Desktop components
+    list << qMakePair(QString("cutefish-filemanager"), QStringList("--desktop"));
+    list << qMakePair(QString("cutefish-statusbar"), QStringList());
+    list << qMakePair(QString("cutefish-dock"), QStringList());
+    list << qMakePair(QString("cutefish-launcher"), QStringList());
 
-    if (!configFile.exists()) {
-        qWarning() << "Configuration file not found:" << configFilePath;
-        return;
-    }
+    list << qMakePair(QString("firefox"), QStringList());
 
-    if (!configFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Unable to open configuration file:" << configFilePath;
-        return;
-    }
-
-    QTextStream in(&configFile);
-    QStringList execList;
-
-    while (!in.atEnd()) {
-        QString line = in.readLine().trimmed();
-        if (!line.isEmpty() && !line.startsWith("#")) {  // 忽略空行和注释
-            execList << line;
-        }
-    }
-
-    configFile.close();
-
-    for (const QString &exec : execList) {
+    for (QPair<QString, QStringList> pair : list) {
         QProcess *process = new QProcess;
-        QStringList arguments = QProcess::splitCommand(exec);
+        process->setProcessChannelMode(QProcess::ForwardedChannels);
+        process->setProgram(pair.first);
+        process->setArguments(pair.second);
+        process->start();
+        process->waitForStarted();
 
-        if (!arguments.isEmpty()) { // 判断是否为空
-            process->setProcessChannelMode(QProcess::ForwardedChannels);
-            process->setProgram(arguments.takeFirst());
-            process->setArguments(arguments);
-            process->start();
-            process->waitForStarted();
+        if (pair.first == "cutefish-settings-daemon") {
+            QThread::msleep(800);
+        }
 
-            if (process->exitCode() == 0) {
-                qDebug() << "Process started:" << exec;
-                m_systemProcess.insert(exec, process);
-            } else {
-                qWarning() << "Failed to start process:" << exec;
-                process->deleteLater();
-            }
+        qDebug() << "Load DE components: " << pair.first << pair.second;
+
+        // Add to map
+        if (process->exitCode() == 0) {
+            m_autoStartProcess.insert(pair.first, process);
+        } else {
+            process->deleteLater();
         }
     }
-    qDebug() << "System processes loaded";
 }
 
 void ProcessManager::loadAutoStartProcess()
