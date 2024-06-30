@@ -11,14 +11,14 @@
 #include <QDir>
 #include <QLoggingCategory>
 
-Q_LOGGING_CATEGORY(LOG_PROCESS_MANAGER, "processmanager")
+Q_LOGGING_CATEGORY(logProcessManager, "processmanager")
 
 ProcessManager::ProcessManager(QObject *parent)
     : QObject(parent)
     , m_wmStarted(false)
     , m_waitLoop(nullptr)
 {
-    qCInfo(LOG_PROCESS_MANAGER) << "ProcessManager initialized";
+    qCInfo(logProcessManager) << "ProcessManager initialized";
 }
 
 ProcessManager::~ProcessManager()
@@ -34,7 +34,7 @@ ProcessManager::~ProcessManager()
 
 void ProcessManager::start()
 {
-    qCInfo(LOG_PROCESS_MANAGER) << "Starting ProcessManager";
+    qCInfo(logProcessManager) << "Starting ProcessManager";
     startWindowManager();
     loadSystemProcess();
 
@@ -65,7 +65,7 @@ void ProcessManager::logout()
 
 void ProcessManager::startWindowManager()
 {
-    qCInfo(LOG_PROCESS_MANAGER) << "Starting window manager";
+    qCInfo(logProcessManager) << "Starting window manager";
     QProcess *wmProcess = new QProcess;
     wmProcess->setProcessChannelMode(QProcess::ForwardedChannels);
     wmProcess->start("kwin_wayland", QStringList());
@@ -78,16 +78,16 @@ void ProcessManager::startWindowManager()
     m_waitLoop = nullptr;
 
     if (wmProcess->state() == QProcess::Running) {
-        qCInfo(LOG_PROCESS_MANAGER) << "Window manager started successfully";
+        qCInfo(logProcessManager) << "Window manager started successfully";
         m_wmStarted = true;
     } else {
-        qCWarning(LOG_PROCESS_MANAGER) << "Failed to start window manager";
+        qCWarning(logProcessManager) << "Failed to start window manager";
     }
 }
 
 void ProcessManager::loadSystemProcess()
 {
-    qCInfo(LOG_PROCESS_MANAGER) << "Loading system processes";
+    qCInfo(logProcessManager) << "Loading system processes";
     QList<QPair<QString, QStringList>> list;
     list << qMakePair(QString("cutefish-settings-daemon"), QStringList());
     list << qMakePair(QString("cutefish-xembedsniproxy"), QStringList());
@@ -112,7 +112,7 @@ void ProcessManager::loadSystemProcess()
             QThread::msleep(800);
         }
 
-        qCInfo(LOG_PROCESS_MANAGER) << "Load DE components: " << pair.first << pair.second;
+        qCInfo(logProcessManager) << "Load DE components: " << pair.first << pair.second;
 
         // Add to map
         if (process->exitCode() == 0) {
@@ -125,7 +125,7 @@ void ProcessManager::loadSystemProcess()
 
 void ProcessManager::loadAutoStartProcess()
 {
-    qCInfo(LOG_PROCESS_MANAGER) << "Loading auto start processes";
+    qCInfo(logProcessManager) << "Loading auto start processes";
     QStringList execList;
     const QStringList dirs = QStandardPaths::locateAll(QStandardPaths::GenericConfigLocation,
                                                        QStringLiteral("autostart"),
