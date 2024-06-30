@@ -164,7 +164,7 @@ void ProcessManager::loadSystemProcess()
         QProcess *process = new QProcess;
         QStringList arguments = QProcess::splitCommand(exec);
 
-        if (!arguments.isEmpty()) {
+        if (!arguments.isEmpty()) { // 判断是否为空
             process->setProcessChannelMode(QProcess::ForwardedChannels);
             process->setProgram(arguments.takeFirst());
             process->setArguments(arguments);
@@ -172,6 +172,7 @@ void ProcessManager::loadSystemProcess()
             process->waitForStarted();
 
             if (process->exitCode() == 0) {
+                qDebug() << "Process started:" << exec;
                 m_systemProcess.insert(exec, process);
             } else {
                 qWarning() << "Failed to start process:" << exec;
@@ -179,6 +180,7 @@ void ProcessManager::loadSystemProcess()
             }
         }
     }
+    qDebug() << "System processes loaded";
 }
 
 void ProcessManager::loadAutoStartProcess()
