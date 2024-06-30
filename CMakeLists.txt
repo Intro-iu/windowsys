@@ -15,7 +15,7 @@ qt_add_executable(windowsys ${SOURCES})
 qt_add_qml_module(windowsys
     URI windowsys
     VERSION 1.0
-    QML_FILES main.qml
+    QML_FILES src/main.qml
 )
 
 target_link_libraries(windowsys
