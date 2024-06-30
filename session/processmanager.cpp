@@ -114,17 +114,18 @@ void ProcessManager::startWindowManager()
 
 void ProcessManager::loadSystemProcess()
 {
+    qDebug() << "Load system process";
     QList<QPair<QString, QStringList>> list;
-    list << qMakePair(QString("cutefish-settings-daemon"), QStringList());
-    list << qMakePair(QString("cutefish-xembedsniproxy"), QStringList());
+    // list << qMakePair(QString("cutefish-settings-daemon"), QStringList());
+    // list << qMakePair(QString("cutefish-xembedsniproxy"), QStringList());
 
     // Desktop components
-    list << qMakePair(QString("cutefish-filemanager"), QStringList("--desktop"));
-    list << qMakePair(QString("cutefish-statusbar"), QStringList());
-    list << qMakePair(QString("cutefish-dock"), QStringList());
-    list << qMakePair(QString("cutefish-launcher"), QStringList());
+    // list << qMakePair(QString("cutefish-filemanager"), QStringList("--desktop"));
+    // list << qMakePair(QString("cutefish-statusbar"), QStringList());
+    // list << qMakePair(QString("cutefish-dock"), QStringList());
+    // list << qMakePair(QString("cutefish-launcher"), QStringList());
 
-    list << qMakePair(QString("firefox"), QStringList());
+    list << qMakePair(QString("plasmashell"), QStringList());
 
     for (QPair<QString, QStringList> pair : list) {
         QProcess *process = new QProcess;
