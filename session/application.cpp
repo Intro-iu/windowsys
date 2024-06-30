@@ -67,11 +67,16 @@ void Application::initEnvironments()
         qputenv("XDG_CONFIG_DIRS", "/etc/xdg");
 
     // Environment
+    qputenv("XDG_SESSION_TYPE", "wayland"); 
     qputenv("DESKTOP_SESSION", "Cutefish");
     qputenv("XDG_CURRENT_DESKTOP", "Cutefish");
     qputenv("XDG_SESSION_DESKTOP", "Cutefish");
 
+    // wayland
+    qputenv("WAYLAND_DISPLAY", "wayland-0");
+
     // Qt
+    qputenv("QT_QPA_PLATFORM", "wayland");
     qputenv("QT_QPA_PLATFORMTHEME", "cutefish");
     qputenv("QT_PLATFORM_PLUGIN", "cutefish");
 
@@ -117,24 +122,6 @@ static bool isInteger(double x)
 {
     int truncated = (int)x;
     return (x == truncated);
-}
-
-void Application::initScreenScaleFactors()
-{
-    QSettings settings(QSettings::UserScope, "cutefishos", "theme");
-    qreal scaleFactor = settings.value("PixelRatio", 1.0).toReal();
-
-    qputenv("QT_SCREEN_SCALE_FACTORS", QByteArray::number(scaleFactor));
-
-    // GDK
-    if (!isInteger(scaleFactor)) {
-        qunsetenv("GDK_SCALE");
-        qputenv("GDK_DPI_SCALE", QByteArray::number(scaleFactor));
-    } else {
-        qputenv("GDK_SCALE", QByteArray::number(scaleFactor, 'g', 0));
-        // Intger scale does not adjust GDK_DPI_SCALE.
-        // qputenv("GDK_DPI_SCALE", QByteArray::number(scaleFactor, 'g', 3));
-    }
 }
 
 bool Application::syncDBusEnvironment()
