@@ -33,6 +33,8 @@
 
 #include <QLoggingCategory>
 #include <QtMessageHandler>
+#include <syslog.h>
+#include <exception>
 
 // Function to handle logging to syslog
 void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
