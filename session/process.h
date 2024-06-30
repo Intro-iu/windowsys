@@ -8,8 +8,11 @@ class Process : public QProcess
     Q_OBJECT
 
 public:
-    Process(QObject *parent = nullptr);
-    ~Process();
+    explicit Process(QObject *parent = nullptr);
+    ~Process() override;
+
+private:
+    void init();
 };
 
-#endif
+#endif // PROCESS_H

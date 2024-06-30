@@ -3,9 +3,12 @@
 Process::Process(QObject *parent)
     : QProcess(parent)
 {
-    QProcess::setProcessChannelMode(QProcess::ForwardedChannels);
+    init();
 }
 
-Process::~Process()
+Process::~Process() = default;
+
+void Process::init()
 {
+    setProcessChannelMode(QProcess::ForwardedChannels);
 }
