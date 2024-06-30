@@ -5,8 +5,9 @@
 #include <QProcess>
 #include <QEventLoop>
 #include <QMap>
+
+// Wayland特定的头文件
 #include <QWaylandClient>
-#include <QLoggingCategory>
 
 class ProcessManager : public QObject
 {

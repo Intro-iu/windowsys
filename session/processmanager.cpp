@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2021 CutefishOS Team.
+ *
+ * Author:     revenmartin <revenmartin@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "processmanager.h"
 
 #include <QCoreApplication>
@@ -9,16 +28,43 @@
 #include <QTimer>
 #include <QThread>
 #include <QDir>
-#include <QFile>
-#include <QTextStream>
 
 #include <KWindowSystem>
+
+#include <QLoggingCategory>
+#include <QtMessageHandler>
+
+// Function to handle logging to syslog
+void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+    QByteArray localMsg = msg.toLocal8Bit();
+    const char *file = context.file ? context.file : "";
+    const char *function = context.function ? context.function : "";
+    switch (type) {
+        case QtDebugMsg:
+            syslog(LOG_DEBUG, "Debug: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+            break;
+        case QtInfoMsg:
+            syslog(LOG_INFO, "Info: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+            break;
+        case QtWarningMsg:
+            syslog(LOG_WARNING, "Warning: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+            break;
+        case QtCriticalMsg:
+            syslog(LOG_CRIT, "Critical: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+            break;
+        case QtFatalMsg:
+            syslog(LOG_ALERT, "Fatal: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
+            abort();
+    }
+}
 
 ProcessManager::ProcessManager(QObject *parent)
     : QObject(parent)
     , m_wmStarted(false)
     , m_waitLoop(nullptr)
 {
+    openlog("prts-session", LOG_PID | LOG_CONS, LOG_USER);
+    qInstallMessageHandler(messageHandler);
 }
 
 ProcessManager::~ProcessManager()
@@ -34,7 +80,6 @@ ProcessManager::~ProcessManager()
 
 void ProcessManager::start()
 {
-    qDebug() << "Starting ProcessManager";
     startWindowManager();
     loadSystemProcess();
 
@@ -43,7 +88,6 @@ void ProcessManager::start()
 
 void ProcessManager::logout()
 {
-    qDebug() << "Logging out";
     QMapIterator<QString, QProcess *> i(m_systemProcess);
 
     while (i.hasNext()) {
@@ -66,7 +110,7 @@ void ProcessManager::logout()
 
 void ProcessManager::startWindowManager()
 {
-    qDebug() << "Starting window manager";
+    qCInfo(PM) << "Starting window manager";
 
     QProcess *wmProcess = new QProcess;
     // 启动Wayland窗口管理器
@@ -79,7 +123,7 @@ void ProcessManager::startWindowManager()
     QTimer::singleShot(30 * 1000, m_waitLoop, &QEventLoop::quit);
     m_waitLoop->exec();
 
-    qDebug() << "Window manager started or timeout occurred";
+    qCInfo(PM) << "Window manager started or timeout occurred";
 
     delete m_waitLoop;
     m_waitLoop = nullptr;
@@ -87,18 +131,18 @@ void ProcessManager::startWindowManager()
 
 void ProcessManager::loadSystemProcess()
 {
-    qDebug() << "Loading system processes from configuration file";
+    qCInfo(PM) << "Loading system processes from configuration file";
 
     QString configFilePath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/autostart.conf";
     QFile configFile(configFilePath);
 
     if (!configFile.exists()) {
-        qWarning() << "Configuration file not found:" << configFilePath;
+        qCWarning(PM) << "Configuration file not found:" << configFilePath;
         return;
     }
 
     if (!configFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Unable to open configuration file:" << configFilePath;
+        qCWarning(PM) << "Unable to open configuration file:" << configFilePath;
         return;
     }
 
@@ -128,7 +172,7 @@ void ProcessManager::loadSystemProcess()
             if (process->exitCode() == 0) {
                 m_systemProcess.insert(exec, process);
             } else {
-                qWarning() << "Failed to start process:" << exec;
+                qCWarning(PM) << "Failed to start process:" << exec;
                 process->deleteLater();
             }
         }
@@ -137,8 +181,6 @@ void ProcessManager::loadSystemProcess()
 
 void ProcessManager::loadAutoStartProcess()
 {
-    qDebug() << "Loading auto start processes";
-
     QStringList execList;
     const QStringList dirs = QStandardPaths::locateAll(QStandardPaths::GenericConfigLocation,
                                                        QStringLiteral("autostart"),
