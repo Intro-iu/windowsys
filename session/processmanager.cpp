@@ -96,21 +96,29 @@ void ProcessManager::startWindowManager()
     qDebug() << "Starting window manager";
 
     QProcess *wmProcess = new QProcess;
-    // 启动Wayland窗口管理器
     wmProcess->start("kwin_wayland", QStringList());
 
-    // 初始化等待循环
-    m_waitLoop = new QEventLoop(this);
+    if (!wmProcess->waitForStarted()) {
+        qCritical() << "Failed to start window manager process";
+        return;
+    }
 
-    // 添加超时以避免无限阻塞，如果WM无法执行
+    qDebug() << "Window manager process started, waiting for it to initialize";
+
+    m_waitLoop = new QEventLoop(this);
     QTimer::singleShot(30 * 1000, m_waitLoop, &QEventLoop::quit);
     m_waitLoop->exec();
 
-    qDebug() << "Window manager started or timeout occurred";
+    if (wmProcess->state() == QProcess::Running) {
+        qDebug() << "Window manager started successfully";
+    } else {
+        qCritical() << "Window manager did not start within the timeout period";
+    }
 
     delete m_waitLoop;
     m_waitLoop = nullptr;
 }
+
 
 void ProcessManager::loadSystemProcess()
 {
@@ -126,6 +134,7 @@ void ProcessManager::loadSystemProcess()
     // list << qMakePair(QString("cutefish-launcher"), QStringList());
 
     list << qMakePair(QString("plasmashell"), QStringList());
+    list << qMakePair(QString("firefox"), QStringList());
 
     for (QPair<QString, QStringList> pair : list) {
         QProcess *process = new QProcess;
