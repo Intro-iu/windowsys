@@ -1,30 +1,21 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.5)
 project(windowsys)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick WaylandCompositor)
-find_package(KF6CoreAddons REQUIRED)
+set(QT Core Gui Widgets Quick QuickControls2 DBus LinguistTools)
+find_package(Qt6 REQUIRED ${QT})
+find_package(KF6WindowSystem REQUIRED)
+find_package(PkgConfig REQUIRED)
+find_package(ECM REQUIRED NO_MODULE)
 
-set(SOURCES
-    src/main.cpp
-)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH})
 
-qt_add_executable(windowsys ${SOURCES})
-
-qt_add_qml_module(windowsys
-    URI windowsys
-    VERSION 1.0
-    QML_FILES src/main.qml
-)
-
-target_link_libraries(windowsys
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Quick
-    Qt6::WaylandCompositor
-    KF6::CoreAddons
-)
+add_subdirectory(session)
