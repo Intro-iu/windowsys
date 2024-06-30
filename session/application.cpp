@@ -15,7 +15,7 @@ Application::Application(int &argc, char **argv)
     new SessionAdaptor(this);
 
     // connect to D-Bus and register as an object:
-    QDBusConnection::sessionBus().registerService(QStringLiteral("org.cutefish.Session"));
+    QDBusConnection::sessionBus().registerService(QStringLiteral("org.prts.Session"));
     QDBusConnection::sessionBus().registerObject(QStringLiteral("/Session"), this);
 
     createConfigDirectory();
@@ -48,13 +48,13 @@ void Application::initEnvironments()
         qputenv("XDG_CONFIG_DIRS", "/etc/xdg");
 
     // Environment
-    qputenv("DESKTOP_SESSION", "Cutefish");
-    qputenv("XDG_CURRENT_DESKTOP", "Cutefish");
-    qputenv("XDG_SESSION_DESKTOP", "Cutefish");
+    qputenv("DESKTOP_SESSION", "PRTS");
+    qputenv("XDG_CURRENT_DESKTOP", "PRTS");
+    qputenv("XDG_SESSION_DESKTOP", "PRTS");
 
     // Qt
     qputenv("QT_QPA_PLATFORM", "wayland");
-    qputenv("QT_QPA_PLATFORMTHEME", "cutefish");
+    qputenv("QT_QPA_PLATFORMTHEME", "prts");
     qputenv("QT_PLATFORM_PLUGIN", "wayland");
 
     qunsetenv("QT_AUTO_SCREEN_SCALE_FACTOR");
@@ -75,7 +75,7 @@ void Application::initEnvironments()
 
 void Application::initLanguage()
 {
-    QSettings settings(QSettings::UserScope, "cutefishos", "language");
+    QSettings settings(QSettings::UserScope, "PRTS", "language");
     QString value = settings.value("language", "en_US").toString();
     QString str = QString("%1.UTF-8").arg(value);
 
@@ -103,7 +103,7 @@ static bool isInteger(double x)
 
 void Application::initScreenScaleFactors()
 {
-    QSettings settings(QSettings::UserScope, "cutefishos", "theme");
+    QSettings settings(QSettings::UserScope, "PRTS", "theme");
     qreal scaleFactor = settings.value("PixelRatio", 1.0).toReal();
 
     qputenv("QT_SCREEN_SCALE_FACTORS", QByteArray::number(scaleFactor));
