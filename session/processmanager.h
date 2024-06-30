@@ -5,8 +5,8 @@
 #include <QProcess>
 #include <QEventLoop>
 #include <QMap>
-
 #include <QWaylandClient>
+#include <QLoggingCategory>
 
 class ProcessManager : public QObject
 {
