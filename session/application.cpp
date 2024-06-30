@@ -31,22 +31,29 @@ Application::Application(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_processManager(new ProcessManager)
 {
-    new SessionAdaptor(this);
+    try {
+        new SessionAdaptor(this);
 
-    // connect to D-Bus and register as an object:
-    QDBusConnection::sessionBus().registerService(QStringLiteral("org.cutefish.Session"));
-    QDBusConnection::sessionBus().registerObject(QStringLiteral("/Session"), this);
+        // connect to D-Bus and register as an object:
+        QDBusConnection::sessionBus().registerService(QStringLiteral("org.cutefish.Session"));
+        QDBusConnection::sessionBus().registerObject(QStringLiteral("/Session"), this);
 
-    createConfigDirectory();
-    initEnvironments();
-    initLanguage();
+        createConfigDirectory();
+        initEnvironments();
+        initLanguage();
 
-    if (!syncDBusEnvironment()) {
-        // Startup error
-        qDebug() << "Could not sync environment to dbus.";
+        if (!syncDBusEnvironment()) {
+            // Startup error
+            qDebug() << "Could not sync environment to dbus.";
+        } else {
+            qDebug() << "Environment synced to dbus.";
+        }
+
+        QTimer::singleShot(100, m_processManager, &ProcessManager::start);
+    } catch (const std::exception &e) {
+        qWarning() << "Failed to initialize session: " << e.what();
     }
-
-    QTimer::singleShot(100, m_processManager, &ProcessManager::start);
+    
 }
 
 void Application::initEnvironments()
@@ -66,16 +73,11 @@ void Application::initEnvironments()
         qputenv("XDG_CONFIG_DIRS", "/etc/xdg");
 
     // Environment
-    qputenv("XDG_SESSION_TYPE", "wayland"); 
     qputenv("DESKTOP_SESSION", "Cutefish");
     qputenv("XDG_CURRENT_DESKTOP", "Cutefish");
     qputenv("XDG_SESSION_DESKTOP", "Cutefish");
 
-    // wayland
-    qputenv("WAYLAND_DISPLAY", "wayland-0");
-
     // Qt
-    qputenv("QT_QPA_PLATFORM", "wayland");
     qputenv("QT_QPA_PLATFORMTHEME", "cutefish");
     qputenv("QT_PLATFORM_PLUGIN", "cutefish");
 
