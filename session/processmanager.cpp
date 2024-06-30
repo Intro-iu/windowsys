@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2021 CutefishOS Team.
- *
- * Author:     revenmartin <revenmartin@gmail.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include "processmanager.h"
 
 #include <QCoreApplication>
@@ -28,8 +9,11 @@
 #include <QTimer>
 #include <QThread>
 #include <QDir>
+#include <QLoggingCategory>
 
 #include <KWindowSystem>
+
+Q_LOGGING_CATEGORY(PM, "ProcessManager")
 
 ProcessManager::ProcessManager(QObject *parent)
     : QObject(parent)
@@ -51,6 +35,7 @@ ProcessManager::~ProcessManager()
 
 void ProcessManager::start()
 {
+    qCInfo(PM) << "Starting ProcessManager";
     startWindowManager();
     loadSystemProcess();
 
@@ -59,6 +44,7 @@ void ProcessManager::start()
 
 void ProcessManager::logout()
 {
+    qCInfo(PM) << "Logging out";
     QMapIterator<QString, QProcess *> i(m_systemProcess);
 
     while (i.hasNext()) {
@@ -81,18 +67,29 @@ void ProcessManager::logout()
 
 void ProcessManager::startWindowManager()
 {
+    qCInfo(PM) << "Starting window manager";
+
     QProcess *wmProcess = new QProcess;
     // 启动Wayland窗口管理器
     wmProcess->start("kwin_wayland", QStringList());
 
+    // 初始化等待循环
+    m_waitLoop = new QEventLoop(this);
+
     // 添加超时以避免无限阻塞，如果WM无法执行
     QTimer::singleShot(30 * 1000, m_waitLoop, &QEventLoop::quit);
     m_waitLoop->exec();
+
+    qCInfo(PM) << "Window manager started or timeout occurred";
+
+    delete m_waitLoop;
     m_waitLoop = nullptr;
 }
 
 void ProcessManager::loadSystemProcess()
 {
+    qCInfo(PM) << "Loading system processes";
+
     QList<QPair<QString, QStringList>> list;
     list << qMakePair(QString("cutefish-settings-daemon"), QStringList());
     list << qMakePair(QString("cutefish-xembedsniproxy"), QStringList());
@@ -115,7 +112,7 @@ void ProcessManager::loadSystemProcess()
             QThread::msleep(800);
         }
 
-        qDebug() << "Load DE components: " << pair.first << pair.second;
+        qCInfo(PM) << "Load DE components: " << pair.first << pair.second;
 
         // Add to map
         if (process->exitCode() == 0) {
@@ -128,6 +125,8 @@ void ProcessManager::loadSystemProcess()
 
 void ProcessManager::loadAutoStartProcess()
 {
+    qCInfo(PM) << "Loading auto start processes";
+
     QStringList execList;
     const QStringList dirs = QStandardPaths::locateAll(QStandardPaths::GenericConfigLocation,
                                                        QStringLiteral("autostart"),

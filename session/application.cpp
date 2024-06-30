@@ -8,43 +8,12 @@
 #include <QDebug>
 #include <QDir>
 #include <QTimer>
-#include <QLoggingCategory>
-#include <QtMessageHandler>
-#include <syslog.h>
 #include <exception>
-
-// Function to handle logging to syslog
-void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
-    QByteArray localMsg = msg.toLocal8Bit();
-    const char *file = context.file ? context.file : "";
-    const char *function = context.function ? context.function : "";
-    switch (type) {
-        case QtDebugMsg:
-            syslog(LOG_DEBUG, "Debug: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
-            break;
-        case QtInfoMsg:
-            syslog(LOG_INFO, "Info: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
-            break;
-        case QtWarningMsg:
-            syslog(LOG_WARNING, "Warning: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
-            break;
-        case QtCriticalMsg:
-            syslog(LOG_CRIT, "Critical: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
-            break;
-        case QtFatalMsg:
-            syslog(LOG_ALERT, "Fatal: %s (%s:%u, %s)", localMsg.constData(), file, context.line, function);
-            abort();
-    }
-}
 
 Application::Application(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_processManager(new ProcessManager)
 {
-    // Set up logging to syslog
-    openlog("prts-session", LOG_PID | LOG_CONS, LOG_USER);
-    qInstallMessageHandler(messageHandler);
-
     try {
         qDebug() << "Initializing session adaptor";
         new SessionAdaptor(this);
