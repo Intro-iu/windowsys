@@ -40,7 +40,6 @@ Application::Application(int &argc, char **argv)
     createConfigDirectory();
     initEnvironments();
     initLanguage();
-    initScreenScaleFactors();
 
     if (!syncDBusEnvironment()) {
         // Startup error
