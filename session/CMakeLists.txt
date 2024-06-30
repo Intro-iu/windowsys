@@ -1,5 +1,5 @@
-project(session)
-set(TARGET session)
+project(prts-session)
+set(TARGET prts-session)
 
 set(SOURCES
     application.cpp
