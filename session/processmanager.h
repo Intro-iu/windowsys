@@ -1,12 +1,11 @@
 #ifndef PROCESSMANAGER_H
 #define PROCESSMANAGER_H
 
+#include <QAbstractNativeEventFilter>
 #include <QObject>
 #include <QProcess>
 #include <QEventLoop>
 #include <QMap>
-
-// Wayland特定的头文件
 #include <QWaylandClient>
 
 class ProcessManager : public QObject

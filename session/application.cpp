@@ -7,52 +7,32 @@
 #include <QProcess>
 #include <QDebug>
 #include <QDir>
-#include <QTimer>
-#include <exception>
 
 Application::Application(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_processManager(new ProcessManager)
 {
-    try {
-        qDebug() << "Initializing session adaptor";
-        new SessionAdaptor(this);
+    new SessionAdaptor(this);
 
-        qDebug() << "Registering DBus service";
-        if (!QDBusConnection::sessionBus().registerService(QStringLiteral("org.cutefish.Session"))) {
-            qWarning() << "Failed to register DBus service";
-            return;
-        }
+    // connect to D-Bus and register as an object:
+    QDBusConnection::sessionBus().registerService(QStringLiteral("org.cutefish.Session"));
+    QDBusConnection::sessionBus().registerObject(QStringLiteral("/Session"), this);
 
-        qDebug() << "Registering DBus object";
-        if (!QDBusConnection::sessionBus().registerObject(QStringLiteral("/Session"), this)) {
-            qWarning() << "Failed to register DBus object";
-            return;
-        }
+    createConfigDirectory();
+    initEnvironments();
+    initLanguage();
+    initScreenScaleFactors();
 
-        createConfigDirectory();
-        initEnvironments();
-        initLanguage();
-
-        if (!syncDBusEnvironment()) {
-            // Startup error
-            qWarning() << "Could not sync environment to DBus.";
-        } else {
-            qDebug() << "Environment synced to DBus.";
-        }
-
-        QTimer::singleShot(100, m_processManager, &ProcessManager::start);
-    } catch (const std::exception &e) {
-        qWarning() << "Failed to initialize session: " << e.what();
-    } catch (...) {
-        qWarning() << "Failed to initialize session: Unknown error";
+    if (!syncDBusEnvironment()) {
+        // Startup error
+        qDebug() << "Could not sync environment to dbus.";
     }
+
+    QTimer::singleShot(100, m_processManager, &ProcessManager::start);
 }
 
 void Application::initEnvironments()
 {
-    qDebug() << "Initializing environments";
-
     // Set defaults
     if (qEnvironmentVariableIsEmpty("XDG_DATA_HOME"))
         qputenv("XDG_DATA_HOME", QDir::home().absoluteFilePath(QStringLiteral(".local/share")).toLocal8Bit());
@@ -73,8 +53,9 @@ void Application::initEnvironments()
     qputenv("XDG_SESSION_DESKTOP", "Cutefish");
 
     // Qt
+    qputenv("QT_QPA_PLATFORM", "wayland");
     qputenv("QT_QPA_PLATFORMTHEME", "cutefish");
-    qputenv("QT_PLATFORM_PLUGIN", "cutefish");
+    qputenv("QT_PLATFORM_PLUGIN", "wayland");
 
     qunsetenv("QT_AUTO_SCREEN_SCALE_FACTOR");
     qunsetenv("QT_SCALE_FACTOR");
@@ -94,8 +75,6 @@ void Application::initEnvironments()
 
 void Application::initLanguage()
 {
-    qDebug() << "Initializing language settings";
-
     QSettings settings(QSettings::UserScope, "cutefishos", "language");
     QString value = settings.value("language", "en_US").toString();
     QString str = QString("%1.UTF-8").arg(value);
@@ -122,10 +101,26 @@ static bool isInteger(double x)
     return (x == truncated);
 }
 
+void Application::initScreenScaleFactors()
+{
+    QSettings settings(QSettings::UserScope, "cutefishos", "theme");
+    qreal scaleFactor = settings.value("PixelRatio", 1.0).toReal();
+
+    qputenv("QT_SCREEN_SCALE_FACTORS", QByteArray::number(scaleFactor));
+
+    // GDK
+    if (!isInteger(scaleFactor)) {
+        qunsetenv("GDK_SCALE");
+        qputenv("GDK_DPI_SCALE", QByteArray::number(scaleFactor));
+    } else {
+        qputenv("GDK_SCALE", QByteArray::number(scaleFactor, 'g', 0));
+        // Integer scale does not adjust GDK_DPI_SCALE.
+        // qputenv("GDK_DPI_SCALE", QByteArray::number(scaleFactor, 'g', 3));
+    }
+}
+
 bool Application::syncDBusEnvironment()
 {
-    qDebug() << "Syncing environment to DBus";
-
     int exitCode = 0;
 
     // At this point all environment variables are set, let's send it to the DBus session server to update the activation environment
@@ -138,21 +133,14 @@ bool Application::syncDBusEnvironment()
 
 void Application::createConfigDirectory()
 {
-    qDebug() << "Creating config directory";
-
     const QString configDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
 
-    if (!QDir().mkpath(configDir)) {
-        qWarning() << "Could not create config directory XDG_CONFIG_HOME: " << configDir;
-    } else {
-        qDebug() << "Config directory created: " << configDir;
-    }
+    if (!QDir().mkpath(configDir))
+        qDebug() << "Could not create config directory XDG_CONFIG_HOME: " << configDir;
 }
 
 int Application::runSync(const QString &program, const QStringList &args, const QStringList &env)
 {
-    qDebug() << "Running program:" << program << "with arguments:" << args << "and environment:" << env;
-
     QProcess p;
 
     if (!env.isEmpty())
@@ -164,8 +152,6 @@ int Application::runSync(const QString &program, const QStringList &args, const 
 
     if (p.exitCode()) {
         qWarning() << program << args << "exited with code" << p.exitCode();
-    } else {
-        qDebug() << program << args << "finished successfully";
     }
 
     return p.exitCode();
