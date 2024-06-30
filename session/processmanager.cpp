@@ -122,18 +122,14 @@ void ProcessManager::startWindowManager()
 
 void ProcessManager::loadSystemProcess()
 {
-    qDebug() << "Load system process";
     QList<QPair<QString, QStringList>> list;
     // list << qMakePair(QString("cutefish-settings-daemon"), QStringList());
     // list << qMakePair(QString("cutefish-xembedsniproxy"), QStringList());
-
-    // Desktop components
     // list << qMakePair(QString("cutefish-filemanager"), QStringList("--desktop"));
     // list << qMakePair(QString("cutefish-statusbar"), QStringList());
     // list << qMakePair(QString("cutefish-dock"), QStringList());
     // list << qMakePair(QString("cutefish-launcher"), QStringList());
 
-    list << qMakePair(QString("plasmashell"), QStringList());
     list << qMakePair(QString("firefox"), QStringList());
 
     for (QPair<QString, QStringList> pair : list) {
@@ -142,16 +138,17 @@ void ProcessManager::loadSystemProcess()
         process->setProgram(pair.first);
         process->setArguments(pair.second);
         process->start();
-        process->waitForStarted();
 
-        if (pair.first == "cutefish-settings-daemon") {
-            QThread::msleep(800);
+        if (!process->waitForStarted()) {
+            qCritical() << "Failed to start process:" << pair.first;
+            process->deleteLater();
+            continue;
         }
 
         qDebug() << "Load DE components: " << pair.first << pair.second;
 
         // Add to map
-        if (process->exitCode() == 0) {
+        if (process->state() == QProcess::Running) {
             m_autoStartProcess.insert(pair.first, process);
         } else {
             process->deleteLater();
@@ -187,9 +184,14 @@ void ProcessManager::loadAutoStartProcess()
         QProcess *process = new QProcess;
         process->setProgram(exec);
         process->start();
-        process->waitForStarted();
 
-        if (process->exitCode() == 0) {
+        if (!process->waitForStarted()) {
+            qCritical() << "Failed to start autostart process:" << exec;
+            process->deleteLater();
+            continue;
+        }
+
+        if (process->state() == QProcess::Running) {
             m_autoStartProcess.insert(exec, process);
         } else {
             process->deleteLater();
