@@ -10,6 +10,9 @@ set(SOURCES
     src/main.cpp
 )
 
+# Enable AUTOMOC for Qt metatype generation
+set(CMAKE_AUTOMOC ON)
+
 qt_add_executable(windowsys ${SOURCES})
 
 qt_add_qml_module(windowsys
