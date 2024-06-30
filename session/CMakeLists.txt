@@ -36,6 +36,3 @@ install(TARGETS ${TARGET} DESTINATION /usr/bin)
 
 # 安装Wayland会话文件
 install(FILES prts-wayland.desktop DESTINATION /usr/share/wayland-sessions/)
-
-# 安装配置文件
-install(FILES startup.sh DESTINATION /etc/prts/config.d/)
