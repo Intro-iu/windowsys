@@ -100,6 +100,9 @@ void ProcessManager::loadSystemProcess()
     list << qMakePair(QString("cutefish-dock"), QStringList());
     list << qMakePair(QString("cutefish-launcher"), QStringList());
 
+    // Add GUI applications to start
+    list << qMakePair(QString("konsole"), QStringList());
+
     for (QPair<QString, QStringList> pair : list) {
         QProcess *process = new QProcess;
         process->setProcessChannelMode(QProcess::ForwardedChannels);
@@ -122,6 +125,7 @@ void ProcessManager::loadSystemProcess()
         }
     }
 }
+
 
 void ProcessManager::loadAutoStartProcess()
 {
