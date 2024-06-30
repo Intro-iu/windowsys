@@ -1,28 +1,41 @@
 #include <QGuiApplication>
-#include <QQmlApplicationEngine>
-#include <QWaylandCompositor>
-#include <QWaylandQuickCompositor>
+#include <QCommandLineParser>
+#include <QCommandLineOption>
+#include <QtWaylandCompositor/QWaylandCompositor>
+#include <QtWaylandCompositor/QWaylandQuickCompositor>
+#include <QtQuick/QQuickView>
 
-class SimpleCompositor : public QWaylandQuickCompositor {
+class Compositor : public QWaylandQuickCompositor
+{
     Q_OBJECT
 public:
-    SimpleCompositor() : QWaylandQuickCompositor() {
-        setOutputGeometry(QRect(0, 0, 800, 600));
+    Compositor() {
+        setBufferSwapBehavior(QWaylandQuickCompositor::DoubleBuffered);
+        create();
+    }
+
+protected:
+    void create() {
+        QWaylandCompositor::create();
     }
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     QGuiApplication app(argc, argv);
 
-    SimpleCompositor compositor;
-    compositor.create();
+    QCommandLineParser parser;
+    parser.addHelpOption();
+    parser.process(app);
 
-    QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty("compositor", &compositor);
-    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+    Compositor compositor;
 
-    if (engine.rootObjects().isEmpty())
-        return -1;
+    QQuickView view;
+    view.setResizeMode(QQuickView::SizeRootObjectToView);
+    view.setSource(QUrl(QStringLiteral("qrc:/main.qml")));
+    view.show();
 
     return app.exec();
 }
+
+#include "main.moc"

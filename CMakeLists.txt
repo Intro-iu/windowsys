@@ -1,24 +1,27 @@
-cmake_minimum_required(VERSION 3.14)
-
-project(SimpleDesktop)
+cmake_minimum_required(VERSION 3.16)
+project(windowsys)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets WaylandClient WaylandCompositor)
-find_package(KF6 REQUIRED COMPONENTS KWin)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick WaylandCompositor)
+find_package(KF6 REQUIRED COMPONENTS CoreAddons)
 
-add_executable(SimpleDesktop 
+set(SOURCES
     src/main.cpp
 )
 
-target_link_libraries(SimpleDesktop
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Widgets
-    Qt6::WaylandClient
-    Qt6::WaylandCompositor
-    KF6::KWin
+qt_add_executable(windowsys ${SOURCES})
+
+qt_add_qml_module(windowsys
+    URI windowsys
+    VERSION 1.0
+    QML_FILES main.qml
 )
 
-install(TARGETS SimpleDesktop RUNTIME DESTINATION bin)
+target_link_libraries(windowsys
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Quick
+    Qt6::WaylandCompositor
+    KF6::CoreAddons
+)
