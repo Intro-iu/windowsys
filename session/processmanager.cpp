@@ -85,13 +85,22 @@ void ProcessManager::logout()
 
 void ProcessManager::startWindowManager()
 {
+    qCInfo(PM) << "Starting window manager";
+
     QProcess *wmProcess = new QProcess;
     // 启动Wayland窗口管理器
     wmProcess->start("kwin_wayland", QStringList());
 
+    // 初始化等待循环
+    m_waitLoop = new QEventLoop(this);
+
     // 添加超时以避免无限阻塞，如果WM无法执行
     QTimer::singleShot(30 * 1000, m_waitLoop, &QEventLoop::quit);
     m_waitLoop->exec();
+
+    qCInfo(PM) << "Window manager started or timeout occurred";
+
+    delete m_waitLoop;
     m_waitLoop = nullptr;
 }
 
