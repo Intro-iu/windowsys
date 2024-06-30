@@ -14,10 +14,6 @@
 
 #include <KWindowSystem>
 
-Q_LOGGING_CATEGORY(PM, "processmanager")
-
-Q_LOGGING_CATEGORY(PM, "ProcessManager")
-
 ProcessManager::ProcessManager(QObject *parent)
     : QObject(parent)
     , m_wmStarted(false)
