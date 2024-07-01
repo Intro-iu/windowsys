@@ -112,7 +112,7 @@ void ProcessManager::startWindowManager()
 void ProcessManager::loadSystemProcess()
 {
     QList<QPair<QString, QStringList>> list;
-    list << qMakePair(QString("firefox"), QStringList());
+    list << qMakePair(QString("/usr/bin/firefox"), QStringList());
 
     for (QPair<QString, QStringList> pair : list) {
         QProcess *process = new QProcess;
