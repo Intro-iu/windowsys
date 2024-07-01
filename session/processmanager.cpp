@@ -123,26 +123,29 @@ void ProcessManager::loadSystemProcess()
     list << qMakePair(QString("firefox"), QStringList());
 
     for (QPair<QString, QStringList> pair : list) {
-        QProcess *process = new QProcess;
-        process->setProcessChannelMode(QProcess::ForwardedChannels);
-        process->setProgram(pair.first);
-        process->setArguments(pair.second);
-        process->start();
-        process->waitForStarted();
+    QProcess *process = new QProcess;
+    process->setProcessChannelMode(QProcess::ForwardedChannels);
+    process->setProgram(pair.first);
+    process->setArguments(pair.second);
+    process->start();
+    if (!process->waitForStarted()) {
+        qDebug() << "Failed to start process:" << pair.first << process->errorString();
+        delete process;
+        continue;
+    } else qDebug() << "Load DE components: " << pair.first << pair.second;
 
-        if (pair.first == "cutefish-settings-daemon") {
-            QThread::msleep(800);
-        }
-
-        qDebug() << "Load DE components: " << pair.first << pair.second;
-
-        // Add to map
-        if (process->exitCode() == 0) {
-            m_autoStartProcess.insert(pair.first, process);
-        } else {
-            process->deleteLater();
-        }
+    if (pair.first == "cutefish-settings-daemon") {
+        QThread::msleep(800);
     }
+
+    // Add to map
+    if (process->exitCode() == 0) {
+        m_autoStartProcess.insert(pair.first, process);
+    } else {
+        process->deleteLater();
+    }
+}
+
 }
 
 void ProcessManager::loadAutoStartProcess()
