@@ -130,6 +130,17 @@ void ProcessManager::loadSystemProcess()
         }
 
         QProcess *process = new QProcess;
+        connect(process, &QProcess::readyReadStandardOutput, [process]() {
+            qDebug() << process->readAllStandardOutput();
+        });
+        connect(process, &QProcess::readyReadStandardError, [process]() {
+            qDebug() << process->readAllStandardError();
+        });
+        connect(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), 
+                [pair](int exitCode, QProcess::ExitStatus exitStatus) {
+            qDebug() << "Process finished:" << pair.first << "Exit code:" << exitCode << "Exit status:" << exitStatus;
+        });
+
         process->setProcessChannelMode(QProcess::ForwardedChannels);
         process->setProgram(pair.first);
         process->setArguments(pair.second);
@@ -154,6 +165,7 @@ void ProcessManager::loadSystemProcess()
         }
     }
 }
+
 
 
 
