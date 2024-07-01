@@ -117,10 +117,13 @@ void ProcessManager::loadSystemProcess()
     // list << qMakePair(QString("cutefish-statusbar"), QStringList());
     // list << qMakePair(QString("cutefish-dock"), QStringList());
     // list << qMakePair(QString("cutefish-launcher"), QStringList());
-    list << qMakePair(QString("firefox"), QStringList());
+    list << qMakePair(QString("/usr/bin/firefox"), QStringList());
 
     for (const QPair<QString, QStringList> &pair : list) {
         QFileInfo fileInfo(pair.first);
+        qDebug() << "Checking executable:" << pair.first;
+        qDebug() << "Exists:" << fileInfo.exists() << "IsExecutable:" << fileInfo.isExecutable();
+
         if (!fileInfo.exists() || !fileInfo.isExecutable()) {
             qDebug() << "Executable not found or not executable:" << pair.first;
             continue;
@@ -151,6 +154,7 @@ void ProcessManager::loadSystemProcess()
         }
     }
 }
+
 
 
 void ProcessManager::loadAutoStartProcess()
