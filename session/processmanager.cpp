@@ -10,6 +10,7 @@
 #include <QThread>
 #include <QDir>
 #include <syslog.h>
+#include <QProcessEnvironment>
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
@@ -114,34 +115,42 @@ void ProcessManager::loadSystemProcess()
     list << qMakePair(QString("firefox"), QStringList());
 
     for (QPair<QString, QStringList> pair : list) {
-    QProcess *process = new QProcess;
-    process->setProcessChannelMode(QProcess::ForwardedChannels);
-    process->setProgram(pair.first);
-    process->setArguments(pair.second);
-    process->start();
-    if (!process->waitForStarted()) {
-        qDebug() << "Failed to start process:" << pair.first << process->errorString();
-        delete process;
-        continue;
-    } else qDebug() << "Load DE components: " << pair.first << pair.second;
+        QProcess *process = new QProcess;
+        process->setProcessChannelMode(QProcess::ForwardedChannels);
+        process->setProgram(pair.first);
+        process->setArguments(pair.second);
+        
+        // Set up environment variables
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        process->setProcessEnvironment(env);
 
-    connect(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), 
+        connect(process, &QProcess::readyReadStandardOutput, [process]() {
+            qDebug() << process->readAllStandardOutput();
+        });
+        connect(process, &QProcess::readyReadStandardError, [process]() {
+            qDebug() << process->readAllStandardError();
+        });
+
+        process->start();
+        if (!process->waitForStarted()) {
+            qDebug() << "Failed to start process:" << pair.first << process->errorString();
+            delete process;
+            continue;
+        } else {
+            qDebug() << "Load DE components: " << pair.first << pair.second;
+        }
+
+        connect(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), 
                 [pair](int exitCode, QProcess::ExitStatus exitStatus) {
             qDebug() << "Process finished:" << pair.first << "Exit code:" << exitCode << "Exit status:" << exitStatus;
         });
 
-    // if (pair.first == "cutefish-settings-daemon") {
-    //     QThread::msleep(800);
-    // }
-
-    // Add to map
-    if (process->exitCode() == 0) {
-        m_autoStartProcess.insert(pair.first, process);
-    } else {
-        process->deleteLater();
+        if (process->state() == QProcess::Running) {
+            m_autoStartProcess.insert(pair.first, process);
+        } else {
+            process->deleteLater();
+        }
     }
-}
-
 }
 
 void ProcessManager::loadAutoStartProcess()
@@ -174,7 +183,7 @@ void ProcessManager::loadAutoStartProcess()
         process->start();
         process->waitForStarted();
 
-        if (process->exitCode() == 0) {
+        if (process->state() == QProcess::Running) {
             m_autoStartProcess.insert(exec, process);
         } else {
             process->deleteLater();
