@@ -144,6 +144,12 @@ void ProcessManager::loadSystemProcess()
         process->setProcessChannelMode(QProcess::ForwardedChannels);
         process->setProgram(pair.first);
         process->setArguments(pair.second);
+        
+        // Set environment variables
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        env.insert("DISPLAY", ":0");  // 设置 DISPLAY 变量，确保其指向正确的显示服务器
+        process->setProcessEnvironment(env);
+
         process->start();
         if (!process->waitForStarted()) {
             qDebug() << "Failed to start process:" << pair.first << process->errorString();
@@ -165,8 +171,6 @@ void ProcessManager::loadSystemProcess()
         }
     }
 }
-
-
 
 
 
