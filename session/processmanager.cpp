@@ -131,10 +131,10 @@ void ProcessManager::loadSystemProcess()
 
         QProcess *process = new QProcess;
         connect(process, &QProcess::readyReadStandardOutput, [process]() {
-            qDebug() << process->readAllStandardOutput();
+            qDebug() << "Standard Output:" << process->readAllStandardOutput();
         });
         connect(process, &QProcess::readyReadStandardError, [process]() {
-            qDebug() << process->readAllStandardError();
+            qDebug() << "Standard Error:" << process->readAllStandardError();
         });
         connect(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), 
                 [pair](int exitCode, QProcess::ExitStatus exitStatus) {
@@ -165,6 +165,7 @@ void ProcessManager::loadSystemProcess()
         }
     }
 }
+
 
 
 
