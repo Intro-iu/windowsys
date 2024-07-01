@@ -125,10 +125,10 @@ void ProcessManager::loadSystemProcess()
         process->setProcessEnvironment(env);
 
         connect(process, &QProcess::readyReadStandardOutput, [process]() {
-            qDebug() << process->readAllStandardOutput();
+            qDebug() << "Standard Output:" << process->readAllStandardOutput();
         });
         connect(process, &QProcess::readyReadStandardError, [process]() {
-            qDebug() << process->readAllStandardError();
+            qDebug() << "Standard Error:" << process->readAllStandardError();
         });
 
         process->start();
