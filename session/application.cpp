@@ -49,9 +49,11 @@ void Application::initEnvironments()
         qputenv("XDG_CONFIG_DIRS", "/etc/xdg");
 
     // Environment
+    qputenv("DISPLAY", ":1");
     qputenv("DESKTOP_SESSION", "PRTS");
     qputenv("XDG_CURRENT_DESKTOP", "PRTS");
     qputenv("XDG_SESSION_DESKTOP", "PRTS");
+    qputenv("XDG_SESSION_TYPE", "wayland");
 
     // Qt
     qputenv("QT_QPA_PLATFORM", "wayland");

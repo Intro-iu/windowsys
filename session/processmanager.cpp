@@ -130,6 +130,10 @@ void ProcessManager::loadSystemProcess()
         connect(process, &QProcess::readyReadStandardError, [process]() {
             qDebug() << "Standard Error:" << process->readAllStandardError();
         });
+        connect(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), 
+                [pair](int exitCode, QProcess::ExitStatus exitStatus) {
+            qDebug() << "Process finished:" << pair.first << "Exit code:" << exitCode << "Exit status:" << exitStatus;
+        });
 
         process->start();
         if (!process->waitForStarted()) {
@@ -140,10 +144,6 @@ void ProcessManager::loadSystemProcess()
             qDebug() << "Load DE components: " << pair.first << pair.second;
         }
 
-        connect(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), 
-                [pair](int exitCode, QProcess::ExitStatus exitStatus) {
-            qDebug() << "Process finished:" << pair.first << "Exit code:" << exitCode << "Exit status:" << exitStatus;
-        });
 
         if (process->state() == QProcess::Running) {
             m_autoStartProcess.insert(pair.first, process);
