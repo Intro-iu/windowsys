@@ -111,42 +111,47 @@ void ProcessManager::startWindowManager()
 void ProcessManager::loadSystemProcess()
 {
     QList<QPair<QString, QStringList>> list;
-    list << qMakePair(QString("cutefish-settings-daemon"), QStringList());
-    list << qMakePair(QString("cutefish-xembedsniproxy"), QStringList());
-
-    // Desktop components
-    list << qMakePair(QString("cutefish-filemanager"), QStringList("--desktop"));
-    list << qMakePair(QString("cutefish-statusbar"), QStringList());
-    list << qMakePair(QString("cutefish-dock"), QStringList());
-    list << qMakePair(QString("cutefish-launcher"), QStringList());
-
+    // list << qMakePair(QString("cutefish-settings-daemon"), QStringList());
+    // list << qMakePair(QString("cutefish-xembedsniproxy"), QStringList());
+    // list << qMakePair(QString("cutefish-filemanager"), QStringList("--desktop"));
+    // list << qMakePair(QString("cutefish-statusbar"), QStringList());
+    // list << qMakePair(QString("cutefish-dock"), QStringList());
+    // list << qMakePair(QString("cutefish-launcher"), QStringList());
     list << qMakePair(QString("firefox"), QStringList());
 
-    for (QPair<QString, QStringList> pair : list) {
-    QProcess *process = new QProcess;
-    process->setProcessChannelMode(QProcess::ForwardedChannels);
-    process->setProgram(pair.first);
-    process->setArguments(pair.second);
-    process->start();
-    if (!process->waitForStarted()) {
-        qDebug() << "Failed to start process:" << pair.first << process->errorString();
-        delete process;
-        continue;
-    } else qDebug() << "Load DE components: " << pair.first << pair.second;
+    for (const QPair<QString, QStringList> &pair : list) {
+        QFileInfo fileInfo(pair.first);
+        if (!fileInfo.exists() || !fileInfo.isExecutable()) {
+            qDebug() << "Executable not found or not executable:" << pair.first;
+            continue;
+        }
 
-    if (pair.first == "cutefish-settings-daemon") {
-        QThread::msleep(800);
-    }
+        QProcess *process = new QProcess;
+        process->setProcessChannelMode(QProcess::ForwardedChannels);
+        process->setProgram(pair.first);
+        process->setArguments(pair.second);
+        process->start();
+        if (!process->waitForStarted()) {
+            qDebug() << "Failed to start process:" << pair.first << process->errorString();
+            delete process;
+            continue;
+        } else {
+            qDebug() << "Loaded DE component:" << pair.first << pair.second << "with PID" << process->processId();
+        }
 
-    // Add to map
-    if (process->exitCode() == 0) {
-        m_autoStartProcess.insert(pair.first, process);
-    } else {
-        process->deleteLater();
+        if (pair.first == "cutefish-settings-daemon") {
+            QThread::msleep(800);
+        }
+
+        // Add to map
+        if (process->state() == QProcess::Running) {
+            m_autoStartProcess.insert(pair.first, process);
+        } else {
+            process->deleteLater();
+        }
     }
 }
 
-}
 
 void ProcessManager::loadAutoStartProcess()
 {
